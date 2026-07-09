@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quizforge-postgres
+    environment:
+      POSTGRES_DB: quizforge
+      POSTGRES_USER: quizforge
+      POSTGRES_PASSWORD: quizforge123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/data/postgres
+    restart: unless-stopped
+    networks:
+      - quizforge-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quizforge-app
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/quizforge
+      SPRING_DATASOURCE_USERNAME: quizforge
+      SPRING_DATASOURCE_PASSWORD: quizforge123
+      APP_DATA_IMPORT_ENABLED: true
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    restart: on-failure
+    networks:
+      - quizforge-network
+    volumes:
+      - ./src/main/resources/data:/app/data
+
+volumes:
+  postgres-data:
+
+networks:
+  quizforge-network:
+    driver: bridge

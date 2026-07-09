@@ -1,7 +1,6 @@
-package com.quizforge.domain.entity;
+package com.quizforge.domain.model;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 @Getter
 @Builder

@@ -1,12 +1,17 @@
 package com.quizforge.adapter.in.web.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
-public record CreateAlternativeRequest(
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateAlternativeRequest {
 
-        @NotBlank(message = "Alternative description is required") String description,
+    @NotBlank(message = "Alternative description is required")
+    private String description;
 
-        boolean correct
-
-) {
+    @NotNull(message = "Correct flag is required")
+    private Boolean correct;
 }

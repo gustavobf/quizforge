@@ -1,16 +1,24 @@
 package com.quizforge.adapter.in.web.dto.request;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
-import java.util.List;
+import java.util.*;
 
-public record CreateQuestionRequest(
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateQuestionRequest {
 
-        @NotBlank(message = "Question statement is required") String statement,
+    @NotBlank(message = "Statement is required")
+    private String statement;
 
-        @NotEmpty(message = "Question must contain at least one alternative") List<@Valid CreateAlternativeRequest> alternatives
+    @NotNull(message = "Subject ID is required")
+    private Long subjectId;
 
-) {
+    @NotEmpty(message = "Alternatives are required")
+    @Valid
+    private List<CreateAlternativeRequest> alternatives;
 }

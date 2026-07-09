@@ -1,6 +1,5 @@
 package com.quizforge.adapter.in.web.dto.response;
 
-import com.quizforge.domain.enumtype.*;
 import lombok.*;
 
 import java.util.*;
@@ -9,13 +8,16 @@ import java.util.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuestionResponse {
+public class ExamQuestionResponse {
 
-    private Long id;
+    private Long examId;
+    private Integer totalQuestions;
+    private Integer currentQuestionNumber;
     private String statement;
-    private Long subjectId;
     private String subjectName;
     private List<AlternativeDto> alternatives;
+    private Boolean isAnswered;
+    private Long selectedAlternativeId;
 
     @Getter
     @Builder
@@ -24,6 +26,5 @@ public class QuestionResponse {
     public static class AlternativeDto {
         private Long id;
         private String statement;
-        private Boolean correct;
     }
 }
