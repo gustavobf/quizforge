@@ -1,6 +1,5 @@
 package com.quizforge.adapter.in.web.dto.response;
 
-import com.quizforge.domain.enumtype.*;
 import lombok.*;
 
 import java.time.*;
@@ -15,7 +14,6 @@ public class ExamHistoryResponse {
     private int correctAnswers;
     private int wrongAnswers;
     private double score;
-    private ExamStatus status;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
     private int timeSpentInMinutes;

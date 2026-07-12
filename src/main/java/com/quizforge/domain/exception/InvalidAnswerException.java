@@ -1,21 +1,24 @@
 package com.quizforge.domain.exception;
 
+import java.util.*;
+
 public class InvalidAnswerException extends QuestionException {
 
     private final Long questionId;
-    private final Long alternativeId;
+    private final List<Long> alternativeIds;
 
-    public InvalidAnswerException (Long questionId, Long alternativeId) {
-        super("Invalid answer for question " + questionId + ": alternative " + alternativeId, "INVALID_ANSWER");
+    public InvalidAnswerException (Long questionId, List<Long> alternativeIds) {
+        super("Invalid answer for question " + questionId + ": alternatives " + alternativeIds, "INVALID_ANSWER");
         this.questionId = questionId;
-        this.alternativeId = alternativeId;
+        this.alternativeIds = alternativeIds != null ? new ArrayList<>(alternativeIds) : new ArrayList<>();
     }
 
     public Long getQuestionId () {
         return questionId;
     }
 
-    public Long getAlternativeId () {
-        return alternativeId;
+    public List<Long> getAlternativeIds () {
+        return alternativeIds != null ? new ArrayList<>(alternativeIds) : new ArrayList<>();
     }
+
 }

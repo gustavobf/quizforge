@@ -2,6 +2,8 @@ package com.quizforge.domain.model;
 
 import lombok.*;
 
+import java.util.*;
+
 @Getter
 @Builder
 @AllArgsConstructor
@@ -10,22 +12,40 @@ public class ExamQuestion {
 
     private Long id;
     private Question question;
-    private int orderNumber;
+    private Integer orderNumber;
     private boolean answered;
-    private Long selectedAlternativeId;
     private boolean correct;
+    private List<Long> selectedAlternativeIds;
 
-    public void answer (Long alternativeId) {
-        this.selectedAlternativeId = alternativeId;
-        this.answered = true;
-
-        this.correct = question.getAlternatives().stream().filter(alt -> alt.getId().equals(alternativeId)).findFirst()
-                .map(Alternative::isCorrect).orElse(false);
+    public boolean isAnswered () {
+        return answered;
     }
 
-    public void reset () {
-        this.answered = false;
-        this.selectedAlternativeId = null;
-        this.correct = false;
+    public boolean isCorrect () {
+        return correct;
+    }
+
+    public List<Long> getSelectedAlternativeIds () {
+        return selectedAlternativeIds != null ? selectedAlternativeIds : new ArrayList<>();
+    }
+
+    public void setAnswered (boolean answered) {
+        this.answered = answered;
+    }
+
+    public void setCorrect (boolean correct) {
+        this.correct = correct;
+    }
+
+    public void setSelectedAlternativeIds (List<Long> selectedAlternativeIds) {
+        this.selectedAlternativeIds = selectedAlternativeIds != null ? selectedAlternativeIds : new ArrayList<>();
+    }
+
+    public Question getQuestion () {
+        return question;
+    }
+
+    public Integer getOrderNumber () {
+        return orderNumber;
     }
 }

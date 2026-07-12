@@ -22,7 +22,7 @@ public class CreateQuestionService implements CreateQuestionUseCase {
 
     @Override
     @Transactional
-    public QuestionResponse execute (CreateQuestionRequest request) {
+    public CreateQuestionResponse execute (CreateQuestionRequest request) {
         Subject subject = subjectRepository.findById(request.getSubjectId())
                 .orElseThrow(() -> new SubjectNotFoundException(request.getSubjectId()));
 
@@ -35,11 +35,10 @@ public class CreateQuestionService implements CreateQuestionUseCase {
 
         Question saved = questionRepository.save(question);
 
-        return QuestionResponse.builder().id(saved.getId()).statement(saved.getStatement())
+        return CreateQuestionResponse.builder().id(saved.getId()).statement(saved.getStatement())
                 .subjectId(saved.getSubject().getId()).subjectName(saved.getSubject().getName()).alternatives(
                         saved.getAlternatives().stream()
-                                .map(alt -> QuestionResponse.AlternativeDto.builder().id(alt.getId())
-                                        .statement(alt.getDescription()).correct(alt.isCorrect()).build())
-                                .collect(Collectors.toList())).build();
+                                .map(alt -> CreateQuestionAlternativeDto.builder().id(alt.getId())
+                                        .statement(alt.getDescription()).build()).collect(Collectors.toList())).build();
     }
 }

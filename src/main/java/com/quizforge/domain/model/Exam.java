@@ -1,7 +1,5 @@
 package com.quizforge.domain.model;
 
-import com.quizforge.domain.enumtype.*;
-import com.quizforge.domain.exception.*;
 import lombok.*;
 
 import java.time.*;
@@ -15,81 +13,60 @@ public class Exam {
 
     private Long id;
     private String title;
-    private String description;
     private Subject subject;
     private List<ExamQuestion> questions;
     private int totalQuestions;
-    private int currentQuestionIndex;
-    private ExamStatus status;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
-    private Long userId;
+    private Double score;
 
     public void start () {
-        if (status != ExamStatus.NOT_STARTED) {
-            throw new BusinessException("Exam already started");
+        if (this.startedAt != null) {
+            throw new IllegalStateException("Exam already started");
         }
-        this.status = ExamStatus.IN_PROGRESS;
         this.startedAt = LocalDateTime.now();
-        this.currentQuestionIndex = 0;
-    }
-
-    public ExamQuestion getCurrentQuestion () {
-        if (questions == null || currentQuestionIndex >= questions.size()) {
-            return null;
-        }
-        return questions.get(currentQuestionIndex);
-    }
-
-    public void nextQuestion () {
-        if (currentQuestionIndex < questions.size() - 1) {
-            currentQuestionIndex++;
-        }
-    }
-
-    public void previousQuestion () {
-        if (currentQuestionIndex > 0) {
-            currentQuestionIndex--;
-        }
-    }
-
-    public void goToQuestion (int index) {
-        if (index >= 0 && index < questions.size()) {
-            this.currentQuestionIndex = index;
-        }
-    }
-
-    public boolean isFinished () {
-        return status == ExamStatus.COMPLETED;
     }
 
     public void finish () {
-        if (status == ExamStatus.COMPLETED) {
-            throw new BusinessException("Exam already completed");
+        if (this.finishedAt != null) {
+            throw new IllegalStateException("Exam already finished");
         }
-        this.status = ExamStatus.COMPLETED;
+        if (this.startedAt == null) {
+            throw new IllegalStateException("Exam not started");
+        }
         this.finishedAt = LocalDateTime.now();
-    }
-
-    public int getAnsweredQuestionsCount () {
-        return (int) questions.stream().filter(ExamQuestion::isAnswered).count();
-    }
-
-    public boolean isComplete () {
-        return questions.stream().allMatch(ExamQuestion::isAnswered);
+        this.score = calculateScore();
     }
 
     public int getCorrectAnswersCount () {
-        return (int) questions.stream().filter(ExamQuestion::isCorrect).count();
+        if (questions == null)
+            return 0;
+        return (int) questions.stream().filter(ExamQuestion::isAnswered).filter(ExamQuestion::isCorrect).count();
     }
 
     public int getWrongAnswersCount () {
-        return getAnsweredQuestionsCount() - getCorrectAnswersCount();
+        if (questions == null)
+            return 0;
+        return (int) questions.stream().filter(ExamQuestion::isAnswered).filter(q -> !q.isCorrect()).count();
     }
 
-    public double getScore () {
+    public Double calculateScore () {
         if (totalQuestions == 0)
-            return 0;
+            return 0.0;
         return (getCorrectAnswersCount() * 100.0) / totalQuestions;
+    }
+
+    public Double getScore () {
+        if (score != null) {
+            return score;
+        }
+        return calculateScore();
+    }
+
+    public List<ExamQuestion> getQuestions () {
+        if (questions == null) {
+            return new ArrayList<>();
+        }
+        return questions;
     }
 }

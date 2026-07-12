@@ -15,32 +15,18 @@ import org.springframework.web.bind.annotation.*;
 public class ExamController implements ExamControllerDocs {
 
     private final CreateExamUseCase createExamUseCase;
-    private final GetCurrentQuestionUseCase getCurrentQuestionUseCase;
-    private final AnswerQuestionUseCase answerQuestionUseCase;
     private final FinishExamUseCase finishExamUseCase;
 
     @PostMapping
-    public ResponseEntity<ExamResponse> createExam (@Valid @RequestBody CreateExamRequest request) {
-        ExamResponse response = createExamUseCase.execute(request);
+    public ResponseEntity<CreateExamResponse> createExam (@Valid @RequestBody CreateExamRequest request) {
+        CreateExamResponse response = createExamUseCase.execute(request);
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/{examId}/questions/current")
-    public ResponseEntity<ExamQuestionResponse> getCurrentQuestion (@PathVariable Long examId) {
-        ExamQuestionResponse response = getCurrentQuestionUseCase.execute(examId);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/{examId}/questions/answer")
-    public ResponseEntity<Void> answerQuestion (@PathVariable Long examId,
-                                                @Valid @RequestBody AnswerQuestionRequest request) {
-        answerQuestionUseCase.execute(examId, request.getAlternativeId());
-        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{examId}/finish")
-    public ResponseEntity<ExamResultResponse> finishExam (@PathVariable Long examId) {
-        ExamResultResponse response = finishExamUseCase.execute(examId);
+    public ResponseEntity<ExamResultResponse> finishExam (@PathVariable Long examId,
+                                                          @RequestBody FinishExamRequest request) {
+        ExamResultResponse response = finishExamUseCase.execute(examId, request);
         return ResponseEntity.ok(response);
     }
 }

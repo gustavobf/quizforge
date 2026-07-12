@@ -1,17 +1,18 @@
 package com.quizforge.adapter.in.web.dto.response;
 
-import com.quizforge.domain.enumtype.*;
 import lombok.*;
+
+import java.util.*;
 
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExamResponse {
-
+public class CreateExamResponse {
     private Long examId;
     private String title;
     private Integer totalQuestions;
     private String subjectName;
-    private ExamStatus status;
+    private List<CreateExamQuestionResponse> questions;
+
 }

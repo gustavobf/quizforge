@@ -4,7 +4,6 @@ import com.quizforge.adapter.in.web.dto.request.*;
 import com.quizforge.adapter.in.web.dto.response.*;
 import com.quizforge.application.port.in.*;
 import com.quizforge.application.port.out.*;
-import com.quizforge.domain.enumtype.*;
 import com.quizforge.domain.exception.*;
 import com.quizforge.domain.model.*;
 import lombok.*;
@@ -23,7 +22,7 @@ public class CreateExamService implements CreateExamUseCase {
 
     @Override
     @Transactional
-    public ExamResponse execute (CreateExamRequest request) {
+    public CreateExamResponse execute (CreateExamRequest request) {
         if (request.getQuantity() <= 0) {
             throw new BusinessException("Quantity must be greater than zero");
         }
@@ -49,8 +48,7 @@ public class CreateExamService implements CreateExamUseCase {
             throw new BusinessException("Not enough questions available. Available: " + questions.size());
         }
 
-        Exam exam = Exam.builder().title(request.getTitle()).description(request.getDescription()).subject(subject)
-                .totalQuestions(questions.size()).currentQuestionIndex(0).status(ExamStatus.NOT_STARTED).build();
+        Exam exam = Exam.builder().title(request.getTitle()).subject(subject).totalQuestions(questions.size()).build();
 
         List<ExamQuestion> examQuestions = new ArrayList<>();
         for (int i = 0; i < questions.size(); i++) {
@@ -59,15 +57,47 @@ public class CreateExamService implements CreateExamUseCase {
             examQuestions.add(examQuestion);
         }
 
-        exam = Exam.builder().title(exam.getTitle()).description(exam.getDescription()).subject(exam.getSubject())
-                .questions(examQuestions).totalQuestions(examQuestions.size()).currentQuestionIndex(0)
-                .status(ExamStatus.NOT_STARTED).build();
+        exam = Exam.builder().title(exam.getTitle()).subject(exam.getSubject()).questions(examQuestions)
+                .totalQuestions(examQuestions.size()).build();
 
         exam.start();
         exam = examRepository.save(exam);
 
-        return ExamResponse.builder().examId(exam.getId()).title(exam.getTitle())
+        List<CreateExamQuestionResponse> createExamQuestionRespons = buildQuestionResponses(examQuestions);
+
+        return CreateExamResponse.builder().examId(exam.getId()).title(exam.getTitle())
                 .totalQuestions(exam.getTotalQuestions()).subjectName(subject != null ? subject.getName() : null)
-                .status(exam.getStatus()).build();
+                .questions(createExamQuestionRespons).build();
+    }
+
+    private List<CreateExamQuestionResponse> buildQuestionResponses (List<ExamQuestion> examQuestions) {
+        List<CreateExamQuestionResponse> createExamQuestionRespons = new ArrayList<>();
+
+        for (ExamQuestion examQuestion : examQuestions) {
+            Question question = examQuestion.getQuestion();
+
+            List<CreateExamAlternativeResponse> createExamAlternativeRespons = buildAlternativeResponses(
+                    question.getAlternatives());
+
+            CreateExamQuestionResponse createExamQuestionResponse = CreateExamQuestionResponse.builder()
+                    .questionId(question.getId()).statement(question.getStatement())
+                    .alternatives(createExamAlternativeRespons).orderNumber(examQuestion.getOrderNumber()).build();
+
+            createExamQuestionRespons.add(createExamQuestionResponse);
+        }
+
+        return createExamQuestionRespons;
+    }
+
+    private List<CreateExamAlternativeResponse> buildAlternativeResponses (List<Alternative> alternatives) {
+        List<CreateExamAlternativeResponse> createExamAlternativeRespons = new ArrayList<>();
+
+        for (Alternative alternative : alternatives) {
+            CreateExamAlternativeResponse createExamAlternativeResponse = CreateExamAlternativeResponse.builder()
+                    .alternativeId(alternative.getId()).description(alternative.getDescription()).build();
+            createExamAlternativeRespons.add(createExamAlternativeResponse);
+        }
+
+        return createExamAlternativeRespons;
     }
 }

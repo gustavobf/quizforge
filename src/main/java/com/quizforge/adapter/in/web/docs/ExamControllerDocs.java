@@ -15,47 +15,49 @@ public interface ExamControllerDocs {
 
     @Operation(summary = "Create a new exam", description = "Creates an exam with a specific number of random questions")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Exam created successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExamResponse.class), examples = @ExampleObject(value = """
+            @ApiResponse(responseCode = "200", description = "Exam created successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CreateExamResponse.class), examples = @ExampleObject(value = """
                     {
                       "examId": 1,
                       "title": "Java Basic Exam",
                       "totalQuestions": 10,
-                      "status": "NOT_STARTED"
+                      "subjectName": "Java",
+                      "status": "NOT_STARTED",
+                      "questions": [
+                        {
+                          "questionId": 101,
+                          "statement": "What is the capital of Brazil?",
+                          "alternatives": [
+                            {
+                              "alternativeId": 1,
+                              "description": "Brasília"
+                            },
+                            {
+                              "alternativeId": 2,
+                              "description": "Rio de Janeiro"
+                            },
+                            {
+                              "alternativeId": 3,
+                              "description": "São Paulo"
+                            },
+                            {
+                              "alternativeId": 4,
+                              "description": "Salvador"
+                            }
+                          ],
+                          "orderNumber": 1
+                        }
+                      ]
                     }
                     """))), @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)})
-    ResponseEntity<ExamResponse> createExam (
-            @Valid @RequestBody @Parameter(description = "Exam creation data", required = true) CreateExamRequest request);
-
-    @Operation(summary = "Get current question", description = "Returns the current exam question without the correct answer")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Question found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExamQuestionResponse.class), examples = @ExampleObject(value = """
+    ResponseEntity<CreateExamResponse> createExam (
+            @Valid @RequestBody @Parameter(description = "Exam creation data", required = true, example = """
                     {
-                      "examId": 1,
-                      "totalQuestions": 10,
-                      "currentQuestionNumber": 1,
-                      "statement": "What is the capital of Brazil?",
-                      "alternatives": [
-                        { "id": 1, "statement": "São Paulo" },
-                        { "id": 2, "statement": "Rio de Janeiro" },
-                        { "id": 3, "statement": "Brasília" },
-                        { "id": 4, "statement": "Salvador" }
-                      ],
-                      "isAnswered": false,
-                      "selectedAlternativeId": null
+                      "title": "Java Basic Exam",
+                      "subjectId": 5,
+                      "quantity": 10
                     }
-                    """))), @ApiResponse(responseCode = "404", description = "Exam not found", content = @Content),
-            @ApiResponse(responseCode = "400", description = "Exam is not in progress", content = @Content)})
-    ResponseEntity<ExamQuestionResponse> getCurrentQuestion (
-            @PathVariable @Parameter(description = "Exam ID", required = true, example = "1") Long examId);
-
-    @Operation(summary = "Answer current question", description = "Registers the user's answer for the current question")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Answer registered successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request or question already answered", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Exam not found", content = @Content)})
-    ResponseEntity<Void> answerQuestion (
-            @PathVariable @Parameter(description = "Exam ID", required = true, example = "1") Long examId,
-            @Valid @RequestBody @Parameter(description = "Answer data", required = true) AnswerQuestionRequest request);
+                    """) CreateExamRequest request);
 
     @Operation(summary = "Finish exam", description = "Completes the exam and returns the results with the answer key")
     @ApiResponses(value = {
@@ -63,13 +65,13 @@ public interface ExamControllerDocs {
                     {
                       "examId": 1,
                       "title": "Java Basic Exam",
+                      "subjectName": "Java",
                       "totalQuestions": 10,
                       "correctAnswers": 8,
                       "wrongAnswers": 2,
                       "score": 80.0,
-                      "status": "COMPLETED",
-                      "startedAt": "2026-07-09T10:30:00",
-                      "finishedAt": "2026-07-09T10:45:00",
+                      "startedAt": "2026-07-10T10:30:00",
+                      "finishedAt": "2026-07-10T10:45:00",
                       "timeSpentInMinutes": 15,
                       "questions": [
                         {
@@ -77,12 +79,31 @@ public interface ExamControllerDocs {
                           "statement": "What is the capital of Brazil?",
                           "yourAnswer": "Brasília",
                           "correctAnswer": "Brasília",
-                          "isCorrect": true
+                          "isCorrect": true,
+                          "questionType": "SINGLE_CHOICE"
+                        },
+                        {
+                          "number": 2,
+                          "statement": "Which of the following are Java keywords?",
+                          "yourAnswer": "static, public",
+                          "correctAnswer": "static, public, class",
+                          "isCorrect": false,
+                          "questionType": "MULTIPLE_CHOICE"
                         }
                       ]
                     }
-                    """))), @ApiResponse(responseCode = "400", description = "Cannot finish exam", content = @Content),
+                    """))),
+            @ApiResponse(responseCode = "400", description = "Cannot finish exam - Exam already finished or not started", content = @Content),
             @ApiResponse(responseCode = "404", description = "Exam not found", content = @Content)})
     ResponseEntity<ExamResultResponse> finishExam (
-            @PathVariable @Parameter(description = "Exam ID", required = true, example = "1") Long examId);
+            @PathVariable @Parameter(description = "Exam ID", required = true, example = "1") Long examId,
+            @RequestBody @Parameter(description = "User answers map where key is questionId and value is list of selected alternativeIds", required = true, example = """
+                    {
+                      "answers": {
+                        "101": [1],
+                        "102": [2, 4],
+                        "103": []
+                      }
+                    }
+                    """) FinishExamRequest request);
 }

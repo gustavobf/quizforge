@@ -7,7 +7,7 @@ import java.util.*;
 
 @Getter
 @Builder
-public class ExamResultResponse {
+public class HistoryExamResponse {
     private Long examId;
     private String title;
     private String subjectName;
@@ -18,16 +18,26 @@ public class ExamResultResponse {
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
     private Integer timeSpentInMinutes;
-    private List<QuestionResultDto> questions;
+    private List<QuestionDetailDto> questions;
 
     @Getter
     @Builder
-    public static class QuestionResultDto {
+    public static class QuestionDetailDto {
         private Integer number;
+        private Long questionId;
         private String statement;
+        private List<AlternativeDto> alternatives;
         private List<String> yourAnswer;
         private List<String> correctAnswer;
         private Boolean isCorrect;
         private String questionType;
+    }
+
+    @Getter
+    @Builder
+    public static class AlternativeDto {
+        private Long alternativeId;
+        private String description;
+        private Boolean isCorrect;
     }
 }

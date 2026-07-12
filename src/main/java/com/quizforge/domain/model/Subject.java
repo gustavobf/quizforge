@@ -4,6 +4,7 @@ import com.quizforge.domain.exception.*;
 import lombok.*;
 
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor

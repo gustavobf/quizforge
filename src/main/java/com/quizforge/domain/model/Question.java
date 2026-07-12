@@ -1,7 +1,5 @@
 package com.quizforge.domain.model;
 
-import com.quizforge.domain.enumtype.*;
-import com.quizforge.domain.exception.*;
 import lombok.*;
 
 import java.util.*;
@@ -14,16 +12,13 @@ public class Question {
 
     private Long id;
     private String statement;
-    private Subject subject;
     private List<Alternative> alternatives;
+    private Subject subject;
 
-    public List<Alternative> getAlternativesWithoutCorrectAnswer () {
-        if (alternatives == null) {
-            return List.of();
-        }
-
-        return alternatives.stream()
-                .map(alt -> Alternative.builder().id(alt.getId()).description(alt.getDescription()).correct(false).build())
-                .toList();
+    public boolean isMultipleChoice () {
+        if (alternatives == null)
+            return false;
+        return alternatives.stream().filter(Alternative::isCorrect).count() > 1;
     }
+
 }
