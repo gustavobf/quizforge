@@ -1,5 +1,6 @@
 package com.quizforge.adapter.in.web.dto.response;
 
+import com.quizforge.domain.enumtype.*;
 import lombok.*;
 
 import java.util.*;
@@ -13,4 +14,5 @@ public class CreateExamQuestionResponse {
     private String statement;
     private List<CreateExamAlternativeResponse> alternatives;
     private Integer orderNumber;
+    private QuestionType questionType;
 }

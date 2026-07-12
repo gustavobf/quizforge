@@ -4,6 +4,7 @@ import com.quizforge.adapter.in.web.dto.request.*;
 import com.quizforge.adapter.in.web.dto.response.*;
 import com.quizforge.application.port.in.*;
 import com.quizforge.application.port.out.*;
+import com.quizforge.domain.enumtype.*;
 import com.quizforge.domain.exception.*;
 import com.quizforge.domain.model.*;
 import lombok.*;
@@ -79,9 +80,12 @@ public class CreateExamService implements CreateExamUseCase {
             List<CreateExamAlternativeResponse> createExamAlternativeRespons = buildAlternativeResponses(
                     question.getAlternatives());
 
+            QuestionType questionType = determineQuestionType(question);
+
             CreateExamQuestionResponse createExamQuestionResponse = CreateExamQuestionResponse.builder()
                     .questionId(question.getId()).statement(question.getStatement())
-                    .alternatives(createExamAlternativeRespons).orderNumber(examQuestion.getOrderNumber()).build();
+                    .alternatives(createExamAlternativeRespons).orderNumber(examQuestion.getOrderNumber())
+                    .questionType(questionType).build();
 
             createExamQuestionRespons.add(createExamQuestionResponse);
         }
@@ -99,5 +103,19 @@ public class CreateExamService implements CreateExamUseCase {
         }
 
         return createExamAlternativeRespons;
+    }
+
+    private QuestionType determineQuestionType (Question question) {
+        long correctCount = question.getAlternatives().stream().filter(Alternative::isCorrect).count();
+
+        if (correctCount > 1) {
+            return QuestionType.MULTIPLE_CHOICE;
+        }
+
+        if (correctCount == 1) {
+            return QuestionType.SINGLE_CHOICE;
+        }
+
+        return QuestionType.SINGLE_CHOICE;
     }
 }
