@@ -8,7 +8,7 @@ import java.util.*;
 @Builder
 public class HistorySummaryResponse {
     private int totalExams;
-    private int totalQuestionsAnswered;
+    private long totalQuestionsAnswered;
     private double averageScore;
     private double bestScore;
     private double worstScore;

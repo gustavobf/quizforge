@@ -22,7 +22,4 @@ public class UserAnswer {
         return alternativeIds != null ? alternativeIds : new ArrayList<>();
     }
 
-    public void setAlternativeIds (List<Long> alternativeIds) {
-        this.alternativeIds = alternativeIds;
-    }
 }

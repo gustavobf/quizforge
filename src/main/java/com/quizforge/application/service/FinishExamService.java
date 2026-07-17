@@ -4,6 +4,7 @@ import com.quizforge.adapter.in.web.dto.request.*;
 import com.quizforge.adapter.in.web.dto.response.*;
 import com.quizforge.application.port.in.*;
 import com.quizforge.application.port.out.*;
+import com.quizforge.domain.enumtype.*;
 import com.quizforge.domain.exception.*;
 import com.quizforge.domain.model.*;
 import lombok.*;
@@ -37,68 +38,61 @@ public class FinishExamService implements FinishExamUseCase {
         }
 
         List<UserAnswer> userAnswers = processUserAnswers(exam, request.getAnswers());
+
         userAnswerRepository.saveAll(userAnswers);
 
-        exam.finish();
+        long correctAnswers = userAnswers.stream().filter(UserAnswer::isCorrect).count();
+
+        double score = (correctAnswers * 100.0) / exam.getTotalQuestions();
+
+        exam.finish(score);
+
         exam = examRepository.save(exam);
 
         return buildExamResult(exam, userAnswers);
     }
 
+    private void validateAnswer (Question question, List<Long> selectedAlternativeIds) {
+
+        if (question.getType() == QuestionType.SINGLE_CHOICE && selectedAlternativeIds.size() > 1) {
+
+            throw new BusinessException("Question " + question.getId() + " accepts only one alternative");
+        }
+    }
+
+    private void validateSelectedAlternatives (Question question, List<Long> selectedAlternativeIds) {
+
+        Set<Long> validIds = question.getAlternatives().stream().map(Alternative::getId).collect(Collectors.toSet());
+
+        boolean invalidAlternative = selectedAlternativeIds.stream().anyMatch(id -> !validIds.contains(id));
+
+        if (invalidAlternative) {
+            throw new BusinessException("Question " + question.getId() + " contains invalid alternatives");
+        }
+    }
+
     private List<UserAnswer> processUserAnswers (Exam exam, Map<Long, List<Long>> answersMap) {
+
         List<UserAnswer> userAnswers = new ArrayList<>();
 
         for (ExamQuestion examQuestion : exam.getQuestions()) {
+
             Question question = examQuestion.getQuestion();
-            Long questionId = question.getId();
 
-            List<Long> selectedAlternativeIds = answersMap.getOrDefault(questionId, new ArrayList<>());
+            List<Long> selectedAlternativeIds = answersMap.getOrDefault(question.getId(), Collections.emptyList());
 
-            validateAlternatives(question, selectedAlternativeIds);
+            validateAnswer(question, selectedAlternativeIds);
+            validateSelectedAlternatives(question, selectedAlternativeIds);
 
-            boolean isCorrect = checkAnswer(question, selectedAlternativeIds);
+            boolean isCorrect = question.isCorrectAnswer(selectedAlternativeIds);
 
-            examQuestion.setAnswered(true);
-            examQuestion.setCorrect(isCorrect);
-            examQuestion.setSelectedAlternativeIds(selectedAlternativeIds);
-
-            UserAnswer userAnswer = UserAnswer.builder().examId(exam.getId()).questionId(questionId)
+            UserAnswer userAnswer = UserAnswer.builder().examId(exam.getId()).questionId(question.getId())
                     .alternativeIds(selectedAlternativeIds).correct(isCorrect).answeredAt(LocalDateTime.now()).build();
 
             userAnswers.add(userAnswer);
         }
 
         return userAnswers;
-    }
-
-    private void validateAlternatives (Question question, List<Long> selectedAlternativeIds) {
-        if (selectedAlternativeIds == null || selectedAlternativeIds.isEmpty()) {
-            return;
-        }
-
-        Set<Long> validAlternativeIds = question.getAlternatives().stream().map(Alternative::getId)
-                .collect(Collectors.toSet());
-
-        for (Long selectedId : selectedAlternativeIds) {
-            if (!validAlternativeIds.contains(selectedId)) {
-                throw new BusinessException("Invalid alternative ID: " + selectedId);
-            }
-        }
-    }
-
-    private boolean checkAnswer (Question question, List<Long> selectedAlternativeIds) {
-        if (selectedAlternativeIds == null || selectedAlternativeIds.isEmpty()) {
-            return false;
-        }
-
-        Set<Long> correctAlternativeIds = question.getAlternatives().stream().filter(Alternative::isCorrect)
-                .map(Alternative::getId).collect(Collectors.toSet());
-
-        if (question.isMultipleChoice()) {
-            return new HashSet<>(selectedAlternativeIds).equals(correctAlternativeIds);
-        }
-
-        return selectedAlternativeIds.size() == 1 && correctAlternativeIds.contains(selectedAlternativeIds.get(0));
     }
 
     private ExamResultResponse buildExamResult (Exam exam, List<UserAnswer> userAnswers) {
@@ -116,11 +110,10 @@ public class FinishExamService implements FinishExamUseCase {
             List<String> yourAnswer = getYourAnswerList(question, userAnswer);
             List<String> correctAnswer = getCorrectAnswerList(question);
             boolean isCorrect = userAnswer != null && userAnswer.isCorrect();
-            String questionType = question.isMultipleChoice() ? "MULTIPLE_CHOICE" : "SINGLE_CHOICE";
 
             questionResults.add(ExamResultResponse.QuestionResultDto.builder().number(examQuestion.getOrderNumber())
                     .statement(question.getStatement()).yourAnswer(yourAnswer).correctAnswer(correctAnswer)
-                    .isCorrect(isCorrect).questionType(questionType).build());
+                    .isCorrect(isCorrect).questionType(question.getType().getDescription()).build());
         }
 
         long timeSpentMinutes = 0;

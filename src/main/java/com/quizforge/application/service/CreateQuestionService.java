@@ -4,6 +4,7 @@ import com.quizforge.adapter.in.web.dto.request.*;
 import com.quizforge.adapter.in.web.dto.response.*;
 import com.quizforge.application.port.in.*;
 import com.quizforge.application.port.out.*;
+import com.quizforge.domain.enumtype.*;
 import com.quizforge.domain.exception.*;
 import com.quizforge.domain.model.*;
 import lombok.*;
@@ -31,7 +32,7 @@ public class CreateQuestionService implements CreateQuestionUseCase {
                 .collect(Collectors.toList());
 
         Question question = Question.builder().statement(request.getStatement()).subject(subject)
-                .alternatives(alternatives).build();
+                .type(determineQuestionType(alternatives)).alternatives(alternatives).build();
 
         Question saved = questionRepository.save(question);
 
@@ -40,5 +41,16 @@ public class CreateQuestionService implements CreateQuestionUseCase {
                         saved.getAlternatives().stream()
                                 .map(alt -> CreateQuestionAlternativeDto.builder().id(alt.getId())
                                         .statement(alt.getDescription()).build()).collect(Collectors.toList())).build();
+    }
+
+    private QuestionType determineQuestionType (List<Alternative> alternatives) {
+
+        long correctCount = alternatives.stream().filter(Alternative::isCorrect).count();
+
+        if (correctCount == 0) {
+            throw new BusinessException("Question must have at least one correct alternative");
+        }
+
+        return correctCount > 1 ? QuestionType.MULTIPLE_CHOICE : QuestionType.SINGLE_CHOICE;
     }
 }

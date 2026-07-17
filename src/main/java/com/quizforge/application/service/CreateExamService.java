@@ -12,6 +12,7 @@ import org.springframework.stereotype.*;
 import org.springframework.transaction.annotation.*;
 
 import java.util.*;
+import java.util.stream.*;
 
 @Service
 @RequiredArgsConstructor
@@ -49,19 +50,15 @@ public class CreateExamService implements CreateExamUseCase {
             throw new BusinessException("Not enough questions available. Available: " + questions.size());
         }
 
-        Exam exam = Exam.builder().title(request.getTitle()).subject(subject).totalQuestions(questions.size()).build();
+        List<ExamQuestion> examQuestions = IntStream.range(0, questions.size())
+                .mapToObj(index -> ExamQuestion.builder().question(questions.get(index)).orderNumber(index + 1).build())
+                .toList();
 
-        List<ExamQuestion> examQuestions = new ArrayList<>();
-        for (int i = 0; i < questions.size(); i++) {
-            ExamQuestion examQuestion = ExamQuestion.builder().question(questions.get(i)).orderNumber(i + 1)
-                    .answered(false).correct(false).build();
-            examQuestions.add(examQuestion);
-        }
-
-        exam = Exam.builder().title(exam.getTitle()).subject(exam.getSubject()).questions(examQuestions)
+        Exam exam = Exam.builder().title(request.getTitle()).subject(subject).questions(examQuestions)
                 .totalQuestions(examQuestions.size()).build();
 
         exam.start();
+
         exam = examRepository.save(exam);
 
         List<CreateExamQuestionResponse> createExamQuestionRespons = buildQuestionResponses(examQuestions);
@@ -80,12 +77,10 @@ public class CreateExamService implements CreateExamUseCase {
             List<CreateExamAlternativeResponse> createExamAlternativeRespons = buildAlternativeResponses(
                     question.getAlternatives());
 
-            QuestionType questionType = determineQuestionType(question);
-
             CreateExamQuestionResponse createExamQuestionResponse = CreateExamQuestionResponse.builder()
                     .questionId(question.getId()).statement(question.getStatement())
                     .alternatives(createExamAlternativeRespons).orderNumber(examQuestion.getOrderNumber())
-                    .questionType(questionType).build();
+                    .questionType(question.getType()).build();
 
             createExamQuestionRespons.add(createExamQuestionResponse);
         }
@@ -105,17 +100,4 @@ public class CreateExamService implements CreateExamUseCase {
         return createExamAlternativeRespons;
     }
 
-    private QuestionType determineQuestionType (Question question) {
-        long correctCount = question.getAlternatives().stream().filter(Alternative::isCorrect).count();
-
-        if (correctCount > 1) {
-            return QuestionType.MULTIPLE_CHOICE;
-        }
-
-        if (correctCount == 1) {
-            return QuestionType.SINGLE_CHOICE;
-        }
-
-        return QuestionType.SINGLE_CHOICE;
-    }
 }

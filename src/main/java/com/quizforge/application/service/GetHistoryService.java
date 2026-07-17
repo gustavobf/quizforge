@@ -27,7 +27,7 @@ public class GetHistoryService implements GetHistoryUseCase {
     public HistorySummaryResponse getSummary () {
 
         long totalExams = historyRepository.countFinishedExams();
-        int totalQuestionsAnswered = historyRepository.countTotalQuestionsAnswered();
+        long totalQuestionsAnswered = historyRepository.countTotalQuestionsAnswered();
         double averageScore = historyRepository.getAverageScore();
         double bestScore = historyRepository.getBestScore();
         double worstScore = historyRepository.getWorstScore();
@@ -61,8 +61,7 @@ public class GetHistoryService implements GetHistoryUseCase {
 
         return HistoryExamResponse.builder().examId(exam.getId()).title(exam.getTitle())
                 .subjectName(exam.getSubject() != null ? exam.getSubject().getName() : null)
-                .totalQuestions(exam.getTotalQuestions()).correctAnswers(exam.getCorrectAnswersCount())
-                .wrongAnswers(exam.getWrongAnswersCount()).score(exam.getScore()).startedAt(exam.getStartedAt())
+                .totalQuestions(exam.getTotalQuestions()).score(exam.getScore()).startedAt(exam.getStartedAt())
                 .finishedAt(exam.getFinishedAt()).timeSpentInMinutes(calculateTimeSpent(exam))
                 .questions(questionDetails).build();
     }
@@ -94,7 +93,7 @@ public class GetHistoryService implements GetHistoryUseCase {
 
         return HistorySummaryResponse.RecentExamDto.builder().id(exam.getId()).title(exam.getTitle())
                 .subjectName(exam.getSubject() != null ? exam.getSubject().getName() : null).score(exam.getScore())
-                .correctAnswers(exam.getCorrectAnswersCount()).totalQuestions(exam.getTotalQuestions())
+                .totalQuestions(exam.getTotalQuestions())
                 .finishedAt(exam.getFinishedAt() != null ? exam.getFinishedAt().toString() : null).build();
     }
 
@@ -104,8 +103,7 @@ public class GetHistoryService implements GetHistoryUseCase {
 
         return HistoryExamResponse.builder().examId(exam.getId()).title(exam.getTitle())
                 .subjectName(exam.getSubject() != null ? exam.getSubject().getName() : null)
-                .totalQuestions(exam.getTotalQuestions()).correctAnswers(exam.getCorrectAnswersCount())
-                .wrongAnswers(exam.getWrongAnswersCount()).score(exam.getScore()).startedAt(exam.getStartedAt())
+                .totalQuestions(exam.getTotalQuestions()).score(exam.getScore()).startedAt(exam.getStartedAt())
                 .finishedAt(exam.getFinishedAt()).timeSpentInMinutes(calculateTimeSpent(exam)).questions(null).build();
     }
 
@@ -127,7 +125,6 @@ public class GetHistoryService implements GetHistoryUseCase {
             List<String> yourAnswer = getYourAnswerList(question, userAnswer);
             List<String> correctAnswer = getCorrectAnswerList(question);
             boolean isCorrect = userAnswer != null && userAnswer.isCorrect();
-            String questionType = question.isMultipleChoice() ? "MULTIPLE_CHOICE" : "SINGLE_CHOICE";
 
             List<HistoryExamResponse.AlternativeDto> alternatives = question.getAlternatives().stream()
                     .map(alt -> HistoryExamResponse.AlternativeDto.builder().alternativeId(alt.getId())
@@ -136,8 +133,8 @@ public class GetHistoryService implements GetHistoryUseCase {
 
             questionDetails.add(HistoryExamResponse.QuestionDetailDto.builder().number(examQuestion.getOrderNumber())
                     .questionId(question.getId()).statement(question.getStatement()).alternatives(alternatives)
-                    .yourAnswer(yourAnswer).correctAnswer(correctAnswer).isCorrect(isCorrect).questionType(questionType)
-                    .build());
+                    .yourAnswer(yourAnswer).correctAnswer(correctAnswer).isCorrect(isCorrect)
+                    .questionType(question.getType().getDescription()).build());
         }
 
         return questionDetails;

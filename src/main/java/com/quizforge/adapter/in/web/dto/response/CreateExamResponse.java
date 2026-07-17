@@ -14,5 +14,4 @@ public class CreateExamResponse {
     private Integer totalQuestions;
     private String subjectName;
     private List<CreateExamQuestionResponse> questions;
-
 }

@@ -12,8 +12,6 @@ public class HistoryExamResponse {
     private String title;
     private String subjectName;
     private Integer totalQuestions;
-    private Integer correctAnswers;
-    private Integer wrongAnswers;
     private Double score;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;

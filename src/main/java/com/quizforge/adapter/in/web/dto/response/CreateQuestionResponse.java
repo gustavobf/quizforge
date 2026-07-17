@@ -14,5 +14,4 @@ public class CreateQuestionResponse {
     private String subjectName;
     private String statement;
     private List<CreateQuestionAlternativeDto> alternatives;
-    private Integer orderNumber;
 }

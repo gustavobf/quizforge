@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,33 +7,37 @@ services:
       POSTGRES_USER: quizforge
       POSTGRES_PASSWORD: quizforge123
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/data/postgres
     restart: unless-stopped
     networks:
       - quizforge-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U quizforge -d quizforge" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: quizforge-app
+    container_name: quizforge-srv
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/quizforge
       SPRING_DATASOURCE_USERNAME: quizforge
       SPRING_DATASOURCE_PASSWORD: quizforge123
-      APP_DATA_IMPORT_ENABLED: true
+      SERVER_PORT: 8081
     ports:
-      - "8080:8080"
+      - "8081:8081"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: on-failure
     networks:
       - quizforge-network
-    volumes:
-      - ./src/main/resources/data:/app/data
 
 volumes:
   postgres-data:

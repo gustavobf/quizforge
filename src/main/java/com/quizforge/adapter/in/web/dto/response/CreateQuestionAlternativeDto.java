@@ -9,5 +9,4 @@ import lombok.*;
 public class CreateQuestionAlternativeDto {
     private Long id;
     private String statement;
-    private boolean correct;
 }

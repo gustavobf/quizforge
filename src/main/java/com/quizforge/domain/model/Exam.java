@@ -20,53 +20,40 @@ public class Exam {
     private LocalDateTime finishedAt;
     private Double score;
 
-    public void start () {
-        if (this.startedAt != null) {
+    public void start() {
+
+        if (startedAt != null) {
             throw new IllegalStateException("Exam already started");
         }
-        this.startedAt = LocalDateTime.now();
+
+        startedAt = LocalDateTime.now();
     }
 
-    public void finish () {
-        if (this.finishedAt != null) {
+    public void finish(double score) {
+
+        if (finishedAt != null) {
             throw new IllegalStateException("Exam already finished");
         }
-        if (this.startedAt == null) {
+
+        if (startedAt == null) {
             throw new IllegalStateException("Exam not started");
         }
+
         this.finishedAt = LocalDateTime.now();
-        this.score = calculateScore();
+        this.score = score;
     }
 
-    public int getCorrectAnswersCount () {
-        if (questions == null)
-            return 0;
-        return (int) questions.stream().filter(ExamQuestion::isAnswered).filter(ExamQuestion::isCorrect).count();
+    public boolean isFinished() {
+        return finishedAt != null;
     }
 
-    public int getWrongAnswersCount () {
-        if (questions == null)
-            return 0;
-        return (int) questions.stream().filter(ExamQuestion::isAnswered).filter(q -> !q.isCorrect()).count();
+    public boolean isStarted() {
+        return startedAt != null;
     }
 
-    public Double calculateScore () {
-        if (totalQuestions == 0)
-            return 0.0;
-        return (getCorrectAnswersCount() * 100.0) / totalQuestions;
-    }
-
-    public Double getScore () {
-        if (score != null) {
-            return score;
-        }
-        return calculateScore();
-    }
-
-    public List<ExamQuestion> getQuestions () {
-        if (questions == null) {
-            return new ArrayList<>();
-        }
-        return questions;
+    public List<ExamQuestion> getQuestions() {
+        return questions == null
+                ? Collections.emptyList()
+                : questions;
     }
 }
