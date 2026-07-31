@@ -16,31 +16,34 @@ public class DefaultUsersConfig {
     @Bean
     CommandLineRunner seedDefaultUsers(SpringUserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            createIfAbsent(userRepository, passwordEncoder, "Administrator", "admin@quizforge.local", "Admin@123", Role.ADMIN);
-            createIfAbsent(userRepository, passwordEncoder, "Default User", "user@quizforge.local", "User@123", Role.USER);
+            createOrUpdateDefaultUser(userRepository, passwordEncoder, "Administrator", "admin@quizforge.local", "Admin@123", Role.ADMIN);
+            createOrUpdateDefaultUser(userRepository, passwordEncoder, "Default User", "user@quizforge.local", "User@123", Role.USER);
         };
     }
 
-    private void createIfAbsent(
+    private void createOrUpdateDefaultUser(
             SpringUserRepository userRepository,
             PasswordEncoder passwordEncoder,
             String name,
             String email,
             String rawPassword,
             Role role) {
-        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
-            return;
-        }
-
         LocalDateTime now = LocalDateTime.now();
-        userRepository.save(UserJpaEntity.builder()
-                .name(name)
-                .email(email)
-                .passwordHash(passwordEncoder.encode(rawPassword))
-                .role(role)
-                .active(true)
-                .createdAt(now)
-                .updatedAt(now)
-                .build());
+        UserJpaEntity user = userRepository.findByEmailIgnoreCase(email)
+                .orElseGet(() -> UserJpaEntity.builder()
+                        .email(email)
+                        .createdAt(now)
+                        .build());
+
+        user.setName(name);
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setRole(role);
+        user.setActive(true);
+        if (user.getCreatedAt() == null) {
+            user.setCreatedAt(now);
+        }
+        user.setUpdatedAt(now);
+
+        userRepository.save(user);
     }
 }

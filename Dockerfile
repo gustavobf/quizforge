@@ -14,8 +14,9 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
+RUN apk add --no-cache curl
 RUN mkdir -p /app/data
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
