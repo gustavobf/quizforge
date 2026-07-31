@@ -3,6 +3,7 @@ package com.quizforge.application.service;
 import com.quizforge.adapter.in.web.dto.request.FinishExamRequest;
 import com.quizforge.adapter.in.web.dto.response.ExamResultResponse;
 import com.quizforge.application.port.in.FinishExamUseCase;
+import com.quizforge.application.port.out.CurrentUserPort;
 import com.quizforge.application.port.out.ExamRepositoryPort;
 import com.quizforge.application.port.out.UserAnswerRepositoryPort;
 import com.quizforge.domain.enumtype.QuestionType;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,12 +35,14 @@ public class FinishExamService implements FinishExamUseCase {
 
     private final ExamRepositoryPort examRepository;
     private final UserAnswerRepositoryPort userAnswerRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional
     public ExamResultResponse execute(Long examId, FinishExamRequest request) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ExamNotFoundException(examId));
+        validateExamOwner(exam);
 
         validateExamState(exam);
 
@@ -60,6 +64,13 @@ public class FinishExamService implements FinishExamUseCase {
         }
         if (exam.getStartedAt() == null) {
             throw new BusinessException("Exam has not been started yet");
+        }
+    }
+
+    private void validateExamOwner(Exam exam) {
+        Long currentUserId = currentUserPort.requireCurrentUserId();
+        if (!currentUserPort.isAdmin() && !Objects.equals(exam.getOwnerId(), currentUserId)) {
+            throw new BusinessException("You cannot access another user's exam");
         }
     }
 

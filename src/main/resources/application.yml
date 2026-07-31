@@ -1,11 +1,15 @@
 spring:
+  docker:
+    compose:
+      file: docker-compose-dev.yml
   datasource:
-    url: jdbc:postgresql://localhost:5432/quizforge
+    url: jdbc:postgresql://localhost:5434/quizforge_dev
     username: quizforge
     password: quizforge123
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    open-in-view: false
     database: POSTGRESQL
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -24,3 +28,8 @@ spring:
     init:
       mode: always
       platform: postgresql
+
+jwt:
+  secret: ${JWT_SECRET:quizforge-secret-key-please-change-in-production-2026}
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000

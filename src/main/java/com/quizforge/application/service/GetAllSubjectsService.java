@@ -16,11 +16,12 @@ import java.util.stream.*;
 public class GetAllSubjectsService implements GetAllSubjectsUseCase {
 
     private final SubjectRepositoryPort subjectRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional(readOnly = true)
     public List<SubjectResponse> execute() {
-        return subjectRepository.findAll().stream()
+        return subjectRepository.findAll(currentUserPort.requireCurrentUserId()).stream()
                 .map(subject -> SubjectResponse.builder()
                         .id(subject.getId())
                         .name(subject.getName())

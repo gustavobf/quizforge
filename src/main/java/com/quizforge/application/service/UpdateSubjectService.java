@@ -3,6 +3,7 @@ package com.quizforge.application.service;
 import com.quizforge.adapter.in.web.dto.request.CreateSubjectRequest;
 import com.quizforge.adapter.in.web.dto.response.SubjectResponse;
 import com.quizforge.application.port.in.UpdateSubjectUseCase;
+import com.quizforge.application.port.out.CurrentUserPort;
 import com.quizforge.application.port.out.SubjectRepositoryPort;
 import com.quizforge.domain.exception.ResourceNotFoundException;
 import com.quizforge.domain.model.Subject;
@@ -15,15 +16,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateSubjectService implements UpdateSubjectUseCase {
 
     private final SubjectRepositoryPort subjectRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional
     public SubjectResponse execute(Long id, CreateSubjectRequest request) {
-        Subject subject = subjectRepository.findById(id)
+        Long currentUserId = currentUserPort.requireCurrentUserId();
+        Subject subject = subjectRepository.findById(id, currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + id));
 
         Subject updatedSubject = Subject.builder()
                 .id(subject.getId())
+                .ownerId(currentUserId)
                 .name(request.getName())
                 .description(request.getDescription())
                 .build();

@@ -8,17 +8,19 @@ public class Exam {
     private final Long id;
     private final String title;
     private final Subject subject;
+    private final Long ownerId;
     private final List<ExamQuestion> questions;
     private final int totalQuestions;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
     private Double score;
 
-    private Exam(Long id, String title, Subject subject, List<ExamQuestion> questions, int totalQuestions,
+    private Exam(Long id, String title, Subject subject, Long ownerId, List<ExamQuestion> questions, int totalQuestions,
             LocalDateTime startedAt, LocalDateTime finishedAt, Double score) {
         this.id = id;
         this.title = title;
         this.subject = subject;
+        this.ownerId = ownerId;
         this.questions = questions == null ? List.of() : Collections.unmodifiableList(questions);
         this.totalQuestions = totalQuestions;
         this.startedAt = startedAt;
@@ -44,6 +46,10 @@ public class Exam {
 
     public List<ExamQuestion> getQuestions() {
         return questions == null ? Collections.emptyList() : questions;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
     }
 
     public int getTotalQuestions() {
@@ -92,6 +98,7 @@ public class Exam {
         private Long id;
         private String title;
         private Subject subject;
+        private Long ownerId;
         private List<ExamQuestion> questions;
         private int totalQuestions;
         private LocalDateTime startedAt;
@@ -118,6 +125,11 @@ public class Exam {
             return this;
         }
 
+        public Builder ownerId(Long ownerId) {
+            this.ownerId = ownerId;
+            return this;
+        }
+
         public Builder totalQuestions(int totalQuestions) {
             this.totalQuestions = totalQuestions;
             return this;
@@ -139,7 +151,7 @@ public class Exam {
         }
 
         public Exam build() {
-            return new Exam(id, title, subject, questions, totalQuestions, startedAt, finishedAt, score);
+            return new Exam(id, title, subject, ownerId, questions, totalQuestions, startedAt, finishedAt, score);
         }
     }
 }

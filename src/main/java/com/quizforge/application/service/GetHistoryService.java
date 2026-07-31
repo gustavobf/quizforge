@@ -21,17 +21,19 @@ import java.util.stream.*;
 public class GetHistoryService implements GetHistoryUseCase {
 
     private final HistoryRepositoryPort historyRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional(readOnly = true)
     public HistorySummaryResponse getSummary() {
-        long totalExams = historyRepository.countFinishedExams();
-        long totalQuestionsAnswered = historyRepository.countTotalQuestionsAnswered();
-        double averageScore = historyRepository.getAverageScore();
-        double bestScore = historyRepository.getBestScore();
-        double worstScore = historyRepository.getWorstScore();
+        Long userId = currentUserPort.requireCurrentUserId();
+        long totalExams = historyRepository.countFinishedExams(userId);
+        long totalQuestionsAnswered = historyRepository.countTotalQuestionsAnswered(userId);
+        double averageScore = historyRepository.getAverageScore(userId);
+        double bestScore = historyRepository.getBestScore(userId);
+        double worstScore = historyRepository.getWorstScore(userId);
 
-        List<HistorySummaryResponse.RecentExamDto> recentExamDtos = historyRepository.findRecentExams(5).stream()
+        List<HistorySummaryResponse.RecentExamDto> recentExamDtos = historyRepository.findRecentExams(userId, 5).stream()
                 .map(this::toRecentExamDto)
                 .toList();
 
@@ -48,19 +50,20 @@ public class GetHistoryService implements GetHistoryUseCase {
     @Override
     @Transactional(readOnly = true)
     public Page<HistoryExamResponse> getExams (Pageable pageable) {
-        return historyRepository.findFinishedExams(pageable).map(this::toHistoryExamResponse);
+        return historyRepository.findFinishedExams(currentUserPort.requireCurrentUserId(), pageable).map(this::toHistoryExamResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public HistoryExamResponse getExamDetail (Long examId) {
 
-        Exam exam = historyRepository.findById(examId);
+        Long userId = currentUserPort.requireCurrentUserId();
+        Exam exam = historyRepository.findById(userId, examId);
         if (exam == null || exam.getFinishedAt() == null) {
             throw new ExamNotFoundException(examId);
         }
 
-        List<UserAnswer> userAnswers = historyRepository.findUserAnswersByExamId(examId);
+        List<UserAnswer> userAnswers = historyRepository.findUserAnswersByExamId(userId, examId);
         List<HistoryExamResponse.QuestionDetailDto> questionDetails = buildQuestionDetails(exam, userAnswers);
 
         return HistoryExamResponse.builder().examId(exam.getId()).title(exam.getTitle())
@@ -73,7 +76,7 @@ public class GetHistoryService implements GetHistoryUseCase {
     @Override
     @Transactional(readOnly = true)
     public List<SubjectStatsResponse> getSubjectStats() {
-        return historyRepository.getSubjectStats().stream()
+        return historyRepository.getSubjectStats(currentUserPort.requireCurrentUserId()).stream()
                 .map(row -> SubjectStatsResponse.builder()
                         .subjectId((Long) row.get("subjectId"))
                         .subjectName((String) row.get("subjectName"))

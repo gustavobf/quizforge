@@ -4,11 +4,13 @@ import com.quizforge.domain.exception.BusinessException;
 
 public final class Subject {
     private final Long id;
+    private final Long ownerId;
     private final String name;
     private final String description;
 
-    private Subject(Long id, String name, String description) {
+    private Subject(Long id, Long ownerId, String name, String description) {
         this.id = id;
+        this.ownerId = ownerId;
         this.name = name;
         this.description = description;
         validate();
@@ -26,6 +28,10 @@ public final class Subject {
         return name;
     }
 
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -41,6 +47,7 @@ public final class Subject {
 
     public static class Builder {
         private Long id;
+        private Long ownerId;
         private String name;
         private String description;
 
@@ -54,13 +61,18 @@ public final class Subject {
             return this;
         }
 
+        public Builder ownerId(Long ownerId) {
+            this.ownerId = ownerId;
+            return this;
+        }
+
         public Builder description(String description) {
             this.description = description;
             return this;
         }
 
         public Subject build() {
-            return new Subject(id, name, description);
+            return new Subject(id, ownerId, name, description);
         }
     }
 
@@ -68,6 +80,7 @@ public final class Subject {
     public String toString() {
         return "Subject{" +
                 "id=" + id +
+                ", ownerId=" + ownerId +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 '}';

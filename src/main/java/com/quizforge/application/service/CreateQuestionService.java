@@ -20,11 +20,12 @@ public class CreateQuestionService implements CreateQuestionUseCase {
 
     private final QuestionRepositoryPort questionRepository;
     private final SubjectRepositoryPort subjectRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional
     public CreateQuestionResponse execute(CreateQuestionRequest request) {
-        Subject subject = subjectRepository.findById(request.getSubjectId())
+        Subject subject = subjectRepository.findById(request.getSubjectId(), currentUserPort.requireCurrentUserId())
                 .orElseThrow(() -> new SubjectNotFoundException(request.getSubjectId()));
 
         List<Alternative> alternatives = request.getAlternatives().stream()

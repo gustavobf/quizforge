@@ -3,6 +3,8 @@ package com.quizforge.infrastructure.exception;
 import com.quizforge.domain.exception.*;
 import lombok.extern.slf4j.*;
 import org.springframework.http.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,6 +79,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException (BusinessException ex) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "BUSINESS_ERROR", ex.getMessage());
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+        return buildErrorResponse(HttpStatus.CONFLICT, "USER_ALREADY_EXISTS", ex.getMessage());
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", ex.getMessage());
+    }
+
+    @ExceptionHandler({ InvalidCredentialsException.class, BadCredentialsException.class })
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(Exception ex) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid email or password");
+    }
+
+    @ExceptionHandler({ UnauthorizedException.class, AccessDeniedException.class })
+    public ResponseEntity<ErrorResponse> handleUnauthorized(Exception ex) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

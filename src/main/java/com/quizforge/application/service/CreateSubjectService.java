@@ -14,11 +14,13 @@ import org.springframework.transaction.annotation.*;
 public class CreateSubjectService implements CreateSubjectUseCase {
 
     private final SubjectRepositoryPort subjectRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional
     public SubjectResponse execute (CreateSubjectRequest request) {
-        Subject subject = Subject.builder().name(request.getName()).description(request.getDescription()).build();
+        Long currentUserId = currentUserPort.requireCurrentUserId();
+        Subject subject = Subject.builder().ownerId(currentUserId).name(request.getName()).description(request.getDescription()).build();
 
         Subject savedSubject = subjectRepository.save(subject);
 

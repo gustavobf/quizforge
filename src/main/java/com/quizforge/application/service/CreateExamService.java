@@ -21,6 +21,7 @@ public class CreateExamService implements CreateExamUseCase {
     private final QuestionRepositoryPort questionRepository;
     private final ExamRepositoryPort examRepository;
     private final SubjectRepositoryPort subjectRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional
@@ -31,15 +32,18 @@ public class CreateExamService implements CreateExamUseCase {
 
         Subject subject = null;
         if (request.getSubjectId() != null) {
-            subject = subjectRepository.findById(request.getSubjectId())
+            subject = subjectRepository.findById(request.getSubjectId(), currentUserPort.requireCurrentUserId())
                     .orElseThrow(() -> new SubjectNotFoundException(request.getSubjectId()));
         }
 
         List<Question> questions;
         if (subject != null) {
-            questions = questionRepository.findRandomQuestionsBySubject(request.getQuantity(), subject.getId());
+            questions = questionRepository.findRandomQuestionsBySubject(
+                    request.getQuantity(),
+                    subject.getId(),
+                    currentUserPort.requireCurrentUserId());
         } else {
-            questions = questionRepository.findRandomQuestions(request.getQuantity());
+            questions = questionRepository.findRandomQuestions(request.getQuantity(), currentUserPort.requireCurrentUserId());
         }
 
         if (questions.isEmpty()) {
@@ -54,7 +58,7 @@ public class CreateExamService implements CreateExamUseCase {
                 .mapToObj(index -> ExamQuestion.builder().question(questions.get(index)).orderNumber(index + 1).build())
                 .toList();
 
-        Exam exam = Exam.builder().title(request.getTitle()).subject(subject).questions(examQuestions)
+        Exam exam = Exam.builder().title(request.getTitle()).subject(subject).ownerId(currentUserPort.requireCurrentUserId()).questions(examQuestions)
                 .totalQuestions(examQuestions.size()).build();
 
         exam.start();

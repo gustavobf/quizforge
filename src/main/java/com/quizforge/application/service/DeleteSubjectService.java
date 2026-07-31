@@ -13,11 +13,12 @@ import org.springframework.transaction.annotation.*;
 public class DeleteSubjectService implements DeleteSubjectUseCase {
 
     private final SubjectRepositoryPort subjectRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional
     public void execute (Long id) {
-        Subject subject = subjectRepository.findById(id)
+        Subject subject = subjectRepository.findById(id, currentUserPort.requireCurrentUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + id));
 
         subjectRepository.delete(subject);

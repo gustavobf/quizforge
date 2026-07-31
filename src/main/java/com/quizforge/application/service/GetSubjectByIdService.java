@@ -14,11 +14,12 @@ import org.springframework.transaction.annotation.*;
 public class GetSubjectByIdService implements GetSubjectByIdUseCase {
 
     private final SubjectRepositoryPort subjectRepository;
+    private final CurrentUserPort currentUserPort;
 
     @Override
     @Transactional(readOnly = true)
     public SubjectResponse execute (Long id) {
-        Subject subject = subjectRepository.findById(id)
+        Subject subject = subjectRepository.findById(id, currentUserPort.requireCurrentUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + id));
 
         return SubjectResponse.builder().id(subject.getId()).name(subject.getName())
