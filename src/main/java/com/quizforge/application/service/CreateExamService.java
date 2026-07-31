@@ -68,36 +68,30 @@ public class CreateExamService implements CreateExamUseCase {
                 .questions(createExamQuestionRespons).build();
     }
 
-    private List<CreateExamQuestionResponse> buildQuestionResponses (List<ExamQuestion> examQuestions) {
-        List<CreateExamQuestionResponse> createExamQuestionRespons = new ArrayList<>();
-
-        for (ExamQuestion examQuestion : examQuestions) {
-            Question question = examQuestion.getQuestion();
-
-            List<CreateExamAlternativeResponse> createExamAlternativeRespons = buildAlternativeResponses(
-                    question.getAlternatives());
-
-            CreateExamQuestionResponse createExamQuestionResponse = CreateExamQuestionResponse.builder()
-                    .questionId(question.getId()).statement(question.getStatement())
-                    .alternatives(createExamAlternativeRespons).orderNumber(examQuestion.getOrderNumber())
-                    .questionType(question.getType()).build();
-
-            createExamQuestionRespons.add(createExamQuestionResponse);
-        }
-
-        return createExamQuestionRespons;
+    private List<CreateExamQuestionResponse> buildQuestionResponses(List<ExamQuestion> examQuestions) {
+        return examQuestions.stream()
+                .map(examQuestion -> {
+                    Question question = examQuestion.question();
+                    List<CreateExamAlternativeResponse> alternatives = buildAlternativeResponses(
+                            question.alternatives());
+                    return CreateExamQuestionResponse.builder()
+                            .questionId(question.id())
+                            .statement(question.statement())
+                            .alternatives(alternatives)
+                            .orderNumber(examQuestion.orderNumber())
+                            .questionType(question.type())
+                            .build();
+                })
+                .toList();
     }
 
-    private List<CreateExamAlternativeResponse> buildAlternativeResponses (List<Alternative> alternatives) {
-        List<CreateExamAlternativeResponse> createExamAlternativeRespons = new ArrayList<>();
-
-        for (Alternative alternative : alternatives) {
-            CreateExamAlternativeResponse createExamAlternativeResponse = CreateExamAlternativeResponse.builder()
-                    .alternativeId(alternative.getId()).description(alternative.getDescription()).build();
-            createExamAlternativeRespons.add(createExamAlternativeResponse);
-        }
-
-        return createExamAlternativeRespons;
+    private List<CreateExamAlternativeResponse> buildAlternativeResponses(List<Alternative> alternatives) {
+        return alternatives.stream()
+                .map(alternative -> CreateExamAlternativeResponse.builder()
+                        .alternativeId(alternative.id())
+                        .description(alternative.description())
+                        .build())
+                .toList();
     }
 
 }

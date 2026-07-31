@@ -23,29 +23,40 @@ public class CreateQuestionService implements CreateQuestionUseCase {
 
     @Override
     @Transactional
-    public CreateQuestionResponse execute (CreateQuestionRequest request) {
+    public CreateQuestionResponse execute(CreateQuestionRequest request) {
         Subject subject = subjectRepository.findById(request.getSubjectId())
                 .orElseThrow(() -> new SubjectNotFoundException(request.getSubjectId()));
 
         List<Alternative> alternatives = request.getAlternatives().stream()
                 .map(alt -> Alternative.builder().description(alt.getDescription()).correct(alt.getCorrect()).build())
-                .collect(Collectors.toList());
+                .toList();
 
-        Question question = Question.builder().statement(request.getStatement()).subject(subject)
-                .type(determineQuestionType(alternatives)).alternatives(alternatives).build();
+        Question question = Question.builder()
+                .statement(request.getStatement())
+                .subject(subject)
+                .type(determineQuestionType(alternatives))
+                .alternatives(alternatives)
+                .build();
 
         Question saved = questionRepository.save(question);
 
-        return CreateQuestionResponse.builder().id(saved.getId()).statement(saved.getStatement())
-                .subjectId(saved.getSubject().getId()).subjectName(saved.getSubject().getName()).alternatives(
-                        saved.getAlternatives().stream()
-                                .map(alt -> CreateQuestionAlternativeDto.builder().id(alt.getId())
-                                        .statement(alt.getDescription()).build()).collect(Collectors.toList())).build();
+        return CreateQuestionResponse.builder()
+                .id(saved.id())
+                .statement(saved.statement())
+                .subjectId(saved.subject().getId())
+                .subjectName(saved.subject().getName())
+                .alternatives(saved.alternatives().stream()
+                        .map(alt -> CreateQuestionAlternativeDto.builder()
+                                .id(alt.id())
+                                .statement(alt.description())
+                                .build())
+                        .toList())
+                .build();
     }
 
     private QuestionType determineQuestionType (List<Alternative> alternatives) {
 
-        long correctCount = alternatives.stream().filter(Alternative::isCorrect).count();
+        long correctCount = alternatives.stream().filter(Alternative::correct).count();
 
         if (correctCount == 0) {
             throw new BusinessException("Question must have at least one correct alternative");

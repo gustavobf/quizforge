@@ -19,10 +19,13 @@ public class GetAllSubjectsService implements GetAllSubjectsUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubjectResponse> execute () {
-        List<Subject> subjects = subjectRepository.findAll();
-
-        return subjects.stream().map(subject -> SubjectResponse.builder().id(subject.getId()).name(subject.getName())
-                .description(subject.getDescription()).build()).collect(Collectors.toList());
+    public List<SubjectResponse> execute() {
+        return subjectRepository.findAll().stream()
+                .map(subject -> SubjectResponse.builder()
+                        .id(subject.getId())
+                        .name(subject.getName())
+                        .description(subject.getDescription())
+                        .build())
+                .toList();
     }
 }

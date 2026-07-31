@@ -4,6 +4,7 @@ import com.quizforge.adapter.in.web.dto.request.CreateQuestionRequest;
 import com.quizforge.adapter.in.web.dto.request.ImportQuestionRow;
 import com.quizforge.application.port.in.CreateQuestionUseCase;
 import com.quizforge.application.port.out.ExcelParserPort;
+import com.quizforge.application.service.ImportQuestionApplicationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +30,7 @@ class ImportQuestionServiceTest {
     private CreateQuestionUseCase createQuestionUseCase;
 
     @InjectMocks
-    private ImportQuestionService importQuestionService;
+    private ImportQuestionApplicationService importQuestionService;
 
     private MockMultipartFile validFile;
     private Long subjectId;

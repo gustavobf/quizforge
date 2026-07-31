@@ -1,15 +1,33 @@
 package com.quizforge.domain.model;
 
-import lombok.*;
+public record ExamQuestion(Long id, Question question, Integer orderNumber) {
 
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class ExamQuestion {
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    private Long id;
-    private Question question;
-    private Integer orderNumber;
+    public static class Builder {
+        private Long id;
+        private Question question;
+        private Integer orderNumber;
 
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder question(Question question) {
+            this.question = question;
+            return this;
+        }
+
+        public Builder orderNumber(Integer orderNumber) {
+            this.orderNumber = orderNumber;
+            return this;
+        }
+
+        public ExamQuestion build() {
+            return new ExamQuestion(id, question, orderNumber);
+        }
+    }
 }

@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dev-postgres-quizforge
+
+    environment:
+      POSTGRES_DB: quizforge_dev
+      POSTGRES_USER: quizforge
+      POSTGRES_PASSWORD: quizforge123
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - dev-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  dev-postgres-data:

@@ -1,0 +1,13 @@
+spring:
+  docker:
+    compose:
+      file: docker-compose-dev.yml
+
+  datasource:
+    url: jdbc:postgresql://localhost:5434/quizforge_dev
+    username: quizforge
+    password: quizforge123
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

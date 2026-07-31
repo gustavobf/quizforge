@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <logger name="org.hibernate.SQL" level="OFF"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="OFF"/>
+    <logger name="org.hibernate.type" level="OFF"/>
+    <logger name="org.springframework.jdbc" level="OFF"/>
+    <logger name="org.springframework.jdbc.datasource" level="OFF"/>
+    <logger name="org.springframework.transaction" level="OFF"/>
+    <logger name="org.hibernate.orm.deprecation" level="OFF"/>
+    <logger name="org.hibernate.orm" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.springframework.boot" level="INFO"/>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.apache.catalina" level="WARN"/>
+    <logger name="org.apache.coyote" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="org.springframework.boot.docker.compose" level="WARN"/>
+    <logger name="org.springframework.boot.docker" level="WARN"/>
+    <logger name="org.springframework.boot.devtools" level="WARN"/>
+    <logger name="com.quizforge" level="DEBUG"/>
+</configuration>

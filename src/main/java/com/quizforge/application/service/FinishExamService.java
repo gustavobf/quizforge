@@ -1,20 +1,30 @@
 package com.quizforge.application.service;
 
-import com.quizforge.adapter.in.web.dto.request.*;
-import com.quizforge.adapter.in.web.dto.response.*;
-import com.quizforge.application.port.in.*;
-import com.quizforge.application.port.out.*;
-import com.quizforge.domain.enumtype.*;
-import com.quizforge.domain.exception.*;
-import com.quizforge.domain.model.*;
-import lombok.*;
-import lombok.extern.slf4j.*;
-import org.springframework.stereotype.*;
-import org.springframework.transaction.annotation.*;
+import com.quizforge.adapter.in.web.dto.request.FinishExamRequest;
+import com.quizforge.adapter.in.web.dto.response.ExamResultResponse;
+import com.quizforge.application.port.in.FinishExamUseCase;
+import com.quizforge.application.port.out.ExamRepositoryPort;
+import com.quizforge.application.port.out.UserAnswerRepositoryPort;
+import com.quizforge.domain.enumtype.QuestionType;
+import com.quizforge.domain.exception.BusinessException;
+import com.quizforge.domain.exception.ExamNotFoundException;
+import com.quizforge.domain.model.Alternative;
+import com.quizforge.domain.model.Exam;
+import com.quizforge.domain.model.ExamQuestion;
+import com.quizforge.domain.model.Question;
+import com.quizforge.domain.model.UserAnswer;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.*;
-import java.util.*;
-import java.util.stream.*;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,136 +36,158 @@ public class FinishExamService implements FinishExamUseCase {
 
     @Override
     @Transactional
-    public ExamResultResponse execute (Long examId, FinishExamRequest request) {
-        Exam exam = examRepository.findById(examId).orElseThrow(() -> new ExamNotFoundException(examId));
+    public ExamResultResponse execute(Long examId, FinishExamRequest request) {
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ExamNotFoundException(examId));
 
-        if (exam.getFinishedAt() != null) {
-            throw new BusinessException("This exam has already been finished");
-        }
-
-        if (exam.getStartedAt() == null) {
-            throw new BusinessException("Exam has not been started yet");
-        }
+        validateExamState(exam);
 
         List<UserAnswer> userAnswers = processUserAnswers(exam, request.getAnswers());
-
         userAnswerRepository.saveAll(userAnswers);
 
-        long correctAnswers = userAnswers.stream().filter(UserAnswer::isCorrect).count();
-
-        double score = (correctAnswers * 100.0) / exam.getTotalQuestions();
+        long correctAnswers = countCorrectAnswers(userAnswers);
+        double score = calculateScore(correctAnswers, exam.getTotalQuestions());
 
         exam.finish(score);
-
         exam = examRepository.save(exam);
 
         return buildExamResult(exam, userAnswers);
     }
 
-    private void validateAnswer (Question question, List<Long> selectedAlternativeIds) {
-
-        if (question.getType() == QuestionType.SINGLE_CHOICE && selectedAlternativeIds.size() > 1) {
-
-            throw new BusinessException("Question " + question.getId() + " accepts only one alternative");
+    private void validateExamState(Exam exam) {
+        if (exam.getFinishedAt() != null) {
+            throw new BusinessException("This exam has already been finished");
+        }
+        if (exam.getStartedAt() == null) {
+            throw new BusinessException("Exam has not been started yet");
         }
     }
 
-    private void validateSelectedAlternatives (Question question, List<Long> selectedAlternativeIds) {
+    private List<UserAnswer> processUserAnswers(Exam exam, Map<Long, List<Long>> answersMap) {
+        return exam.getQuestions().stream()
+                .map(examQuestion -> {
+                    Question question = examQuestion.question();
+                    List<Long> selectedAlternativeIds = answersMap.getOrDefault(question.id(), Collections.emptyList());
 
-        Set<Long> validIds = question.getAlternatives().stream().map(Alternative::getId).collect(Collectors.toSet());
+                    validateAnswer(question, selectedAlternativeIds);
+                    validateSelectedAlternatives(question, selectedAlternativeIds);
 
-        boolean invalidAlternative = selectedAlternativeIds.stream().anyMatch(id -> !validIds.contains(id));
+                    boolean isCorrect = question.isCorrectAnswer(selectedAlternativeIds);
 
-        if (invalidAlternative) {
-            throw new BusinessException("Question " + question.getId() + " contains invalid alternatives");
+                    return UserAnswer.builder()
+                            .examId(exam.getId())
+                            .questionId(question.id())
+                            .alternativeIds(selectedAlternativeIds)
+                            .correct(isCorrect)
+                            .answeredAt(LocalDateTime.now())
+                            .build();
+                })
+                .toList();
+    }
+
+    private void validateAnswer(Question question, List<Long> selectedAlternativeIds) {
+        if (question.type() == QuestionType.SINGLE_CHOICE && selectedAlternativeIds.size() > 1) {
+            throw new BusinessException("Question " + question.id() + " accepts only one alternative");
         }
     }
 
-    private List<UserAnswer> processUserAnswers (Exam exam, Map<Long, List<Long>> answersMap) {
+    private void validateSelectedAlternatives(Question question, List<Long> selectedAlternativeIds) {
+        Set<Long> validIds = question.alternatives().stream()
+                .map(Alternative::id)
+                .collect(Collectors.toSet());
 
-        List<UserAnswer> userAnswers = new ArrayList<>();
+        boolean hasInvalidAlternative = selectedAlternativeIds.stream()
+                .anyMatch(id -> !validIds.contains(id));
 
-        for (ExamQuestion examQuestion : exam.getQuestions()) {
-
-            Question question = examQuestion.getQuestion();
-
-            List<Long> selectedAlternativeIds = answersMap.getOrDefault(question.getId(), Collections.emptyList());
-
-            validateAnswer(question, selectedAlternativeIds);
-            validateSelectedAlternatives(question, selectedAlternativeIds);
-
-            boolean isCorrect = question.isCorrectAnswer(selectedAlternativeIds);
-
-            UserAnswer userAnswer = UserAnswer.builder().examId(exam.getId()).questionId(question.getId())
-                    .alternativeIds(selectedAlternativeIds).correct(isCorrect).answeredAt(LocalDateTime.now()).build();
-
-            userAnswers.add(userAnswer);
+        if (hasInvalidAlternative) {
+            throw new BusinessException("Question " + question.id() + " contains invalid alternatives");
         }
-
-        return userAnswers;
     }
 
-    private ExamResultResponse buildExamResult (Exam exam, List<UserAnswer> userAnswers) {
-        long correctCount = userAnswers.stream().filter(UserAnswer::isCorrect).count();
-        long wrongCount = userAnswers.stream().filter(ua -> !ua.isCorrect()).count();
+    private long countCorrectAnswers(List<UserAnswer> userAnswers) {
+        return userAnswers.stream()
+                .filter(UserAnswer::correct)
+                .count();
+    }
 
-        List<ExamResultResponse.QuestionResultDto> questionResults = new ArrayList<>();
+    private double calculateScore(long correctAnswers, int totalQuestions) {
+        return totalQuestions == 0 ? 0 : (correctAnswers * 100.0) / totalQuestions;
+    }
 
-        for (ExamQuestion examQuestion : exam.getQuestions()) {
-            Question question = examQuestion.getQuestion();
+    private ExamResultResponse buildExamResult(Exam exam, List<UserAnswer> userAnswers) {
+        Map<Long, UserAnswer> userAnswerMap = userAnswers.stream()
+                .collect(Collectors.toMap(UserAnswer::questionId, ua -> ua));
 
-            UserAnswer userAnswer = userAnswers.stream().filter(ua -> ua.getQuestionId().equals(question.getId()))
-                    .findFirst().orElse(null);
+        long correctCount = countCorrectAnswers(userAnswers);
+        long wrongCount = userAnswers.size() - correctCount;
 
-            List<String> yourAnswer = getYourAnswerList(question, userAnswer);
-            List<String> correctAnswer = getCorrectAnswerList(question);
-            boolean isCorrect = userAnswer != null && userAnswer.isCorrect();
+        List<ExamResultResponse.QuestionResultDto> questionResults = exam.getQuestions().stream()
+                .map(examQuestion -> buildQuestionResult(examQuestion, userAnswerMap))
+                .toList();
 
-            questionResults.add(ExamResultResponse.QuestionResultDto.builder().number(examQuestion.getOrderNumber())
-                    .statement(question.getStatement()).yourAnswer(yourAnswer).correctAnswer(correctAnswer)
-                    .isCorrect(isCorrect).questionType(question.getType().getDescription()).build());
-        }
+        long timeSpentMinutes = calculateTimeSpent(exam);
 
-        long timeSpentMinutes = 0;
-        if (exam.getStartedAt() != null && exam.getFinishedAt() != null) {
-            timeSpentMinutes = Duration.between(exam.getStartedAt(), exam.getFinishedAt()).toMinutes();
-        }
-
-        double score = exam.getScore();
-
-        return ExamResultResponse.builder().examId(exam.getId()).title(exam.getTitle())
+        return ExamResultResponse.builder()
+                .examId(exam.getId())
+                .title(exam.getTitle())
                 .subjectName(exam.getSubject() != null ? exam.getSubject().getName() : null)
-                .totalQuestions(exam.getTotalQuestions()).correctAnswers((int) correctCount)
-                .wrongAnswers((int) wrongCount).score(score).startedAt(exam.getStartedAt())
-                .finishedAt(exam.getFinishedAt()).timeSpentInMinutes((int) timeSpentMinutes).questions(questionResults)
+                .totalQuestions(exam.getTotalQuestions())
+                .correctAnswers((int) correctCount)
+                .wrongAnswers((int) wrongCount)
+                .score(exam.getScore())
+                .startedAt(exam.getStartedAt())
+                .finishedAt(exam.getFinishedAt())
+                .timeSpentInMinutes((int) timeSpentMinutes)
+                .questions(questionResults)
                 .build();
     }
 
-    private List<String> getYourAnswerList (Question question, UserAnswer userAnswer) {
-        if (userAnswer == null || userAnswer.getAlternativeIds() == null || userAnswer.getAlternativeIds().isEmpty()) {
+    private ExamResultResponse.QuestionResultDto buildQuestionResult(
+            ExamQuestion examQuestion,
+            Map<Long, UserAnswer> userAnswerMap) {
+        Question question = examQuestion.question();
+        UserAnswer userAnswer = userAnswerMap.get(question.id());
+
+        List<String> yourAnswers = getYourAnswerList(question, userAnswer);
+        List<String> correctAnswers = getCorrectAnswerList(question);
+        boolean isCorrect = userAnswer != null && userAnswer.correct();
+
+        return ExamResultResponse.QuestionResultDto.builder()
+                .number(examQuestion.orderNumber())
+                .statement(question.statement())
+                .yourAnswer(yourAnswers)
+                .correctAnswer(correctAnswers)
+                .isCorrect(isCorrect)
+                .questionType(question.type().getDescription())
+                .build();
+    }
+
+    private List<String> getYourAnswerList(Question question, UserAnswer userAnswer) {
+        if (userAnswer == null || userAnswer.alternativeIds() == null || userAnswer.alternativeIds().isEmpty()) {
             return List.of("Not answered");
         }
 
-        return question.getAlternatives().stream().filter(alt -> userAnswer.getAlternativeIds().contains(alt.getId()))
-                .map(Alternative::getDescription).collect(Collectors.toList());
+        return question.alternatives().stream()
+                .filter(alt -> userAnswer.alternativeIds().contains(alt.id()))
+                .map(Alternative::description)
+                .toList();
     }
 
-    private List<String> getCorrectAnswerList (Question question) {
-        if (question == null || question.getAlternatives() == null) {
+    private List<String> getCorrectAnswerList(Question question) {
+        if (question == null || question.alternatives() == null) {
             return List.of("No correct answer");
         }
 
-        return question.getAlternatives().stream().filter(Alternative::isCorrect).map(Alternative::getDescription)
-                .collect(Collectors.toList());
+        return question.alternatives().stream()
+                .filter(Alternative::correct)
+                .map(Alternative::description)
+                .toList();
     }
 
-    private String buildYourAnswerString (Question question, UserAnswer userAnswer) {
-        List<String> answers = getYourAnswerList(question, userAnswer);
-        return String.join(", ", answers);
-    }
-
-    private String buildCorrectAnswerString (Question question) {
-        List<String> answers = getCorrectAnswerList(question);
-        return String.join(", ", answers);
+    private long calculateTimeSpent(Exam exam) {
+        if (exam.getStartedAt() != null && exam.getFinishedAt() != null) {
+            return Duration.between(exam.getStartedAt(), exam.getFinishedAt()).toMinutes();
+        }
+        return 0;
     }
 }

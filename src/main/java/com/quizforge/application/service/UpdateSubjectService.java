@@ -1,14 +1,14 @@
 package com.quizforge.application.service;
 
-import com.quizforge.adapter.in.web.dto.request.*;
-import com.quizforge.adapter.in.web.dto.response.*;
-import com.quizforge.application.port.in.*;
-import com.quizforge.application.port.out.*;
-import com.quizforge.domain.exception.*;
-import com.quizforge.domain.model.*;
-import lombok.*;
-import org.springframework.stereotype.*;
-import org.springframework.transaction.annotation.*;
+import com.quizforge.adapter.in.web.dto.request.CreateSubjectRequest;
+import com.quizforge.adapter.in.web.dto.response.SubjectResponse;
+import com.quizforge.application.port.in.UpdateSubjectUseCase;
+import com.quizforge.application.port.out.SubjectRepositoryPort;
+import com.quizforge.domain.exception.ResourceNotFoundException;
+import com.quizforge.domain.model.Subject;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,16 +18,22 @@ public class UpdateSubjectService implements UpdateSubjectUseCase {
 
     @Override
     @Transactional
-    public SubjectResponse execute (Long id, CreateSubjectRequest request) {
+    public SubjectResponse execute(Long id, CreateSubjectRequest request) {
         Subject subject = subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subject not found with id: " + id));
 
-        subject.setName(request.getName());
-        subject.setDescription(request.getDescription());
+        Subject updatedSubject = Subject.builder()
+                .id(subject.getId())
+                .name(request.getName())
+                .description(request.getDescription())
+                .build();
 
-        Subject updatedSubject = subjectRepository.save(subject);
+        updatedSubject = subjectRepository.save(updatedSubject);
 
-        return SubjectResponse.builder().id(updatedSubject.getId()).name(updatedSubject.getName())
-                .description(updatedSubject.getDescription()).build();
+        return SubjectResponse.builder()
+                .id(updatedSubject.getId())
+                .name(updatedSubject.getName())
+                .description(updatedSubject.getDescription())
+                .build();
     }
 }

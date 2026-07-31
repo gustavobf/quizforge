@@ -1,14 +1,33 @@
 package com.quizforge.domain.model;
 
-import lombok.*;
+public record Alternative(Long id, String description, boolean correct) {
+    
+    public static Builder builder() {
+        return new Builder();
+    }
 
-@Getter
-@Builder
-public class Alternative {
+    public static class Builder {
+        private Long id;
+        private String description;
+        private boolean correct;
 
-    private Long id;
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
 
-    private String description;
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
 
-    private boolean correct;
+        public Builder correct(boolean correct) {
+            this.correct = correct;
+            return this;
+        }
+
+        public Alternative build() {
+            return new Alternative(id, description, correct);
+        }
+    }
 }
