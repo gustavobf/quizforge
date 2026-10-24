@@ -36,7 +36,8 @@ docker compose up -d --build
 This starts `quizforge-fed`, `quizforge-srv` and `quizforge-postgres` under
 `quizforge-stack`. The backend uses the `docker` profile and the datasource
 environment variables defined in the root Compose file. Frontend: port 3000;
-API: port 8081. Database settings come from the root `.env` file.
+API: port 8081. Database and JWT settings have local defaults in the Compose
+file; override them with environment variables for deployments.
 
 Stop the stack without deleting volumes:
 
