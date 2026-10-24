@@ -1,0 +1,28 @@
+name: quizforge-srv
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: quizforge_dev
+      POSTGRES_USER: quizforge
+      POSTGRES_PASSWORD: quizforge123
+    ports:
+      - "5433:5432"
+    volumes:
+      - dev-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - quizforge-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U quizforge -d quizforge_dev" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dev-postgres-data:
+
+networks:
+  quizforge-network:
+    driver: bridge

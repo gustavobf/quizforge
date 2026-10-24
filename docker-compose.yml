@@ -1,41 +1,67 @@
+name: quizforge-stack
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: quizforge-postgres
     environment:
-      POSTGRES_DB: quizforge
-      POSTGRES_USER: quizforge
-      POSTGRES_PASSWORD: quizforge123
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres-data:/data/postgres
+      - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
-    networks:
-      - quizforge-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U quizforge -d quizforge" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - quizforge-network
 
-  app:
+  backend:
     build:
-      context: .
+      context: ./quizforge-srv
       dockerfile: Dockerfile
     container_name: quizforge-srv
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/quizforge
-      SPRING_DATASOURCE_USERNAME: quizforge
-      SPRING_DATASOURCE_PASSWORD: quizforge123
       SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8081:8081"
     depends_on:
       postgres:
         condition: service_healthy
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - quizforge-network
+
+  frontend:
+    build:
+      context: ./quizforge-fed
+      dockerfile: Dockerfile
+    container_name: quizforge-fed
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - quizforge-network
 
