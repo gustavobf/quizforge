@@ -16,86 +16,22 @@ This project follows a layered, hexagonal-style structure (Ports and Adapters) t
 - Finish exams with separate correct, wrong and unanswered question totals
 - Cancel unfinished exams without including them in statistics
 
-## Hybrid Execution
+## Run with Docker
 
-There are two independent modes. Their PostgreSQL volumes are intentionally separate.
-
-| Mode | Docker project | API | Database |
-| --- | --- | --- | --- |
-| Full Docker stack | `quizforge-stack` | Container on port 8081 | Internal `postgres:5432`, volume `quizforge-stack_postgres-data` |
-| IntelliJ / local Java | `quizforge-srv` (PostgreSQL only) | Local process on port 8081 | `localhost:5433/quizforge_dev`, volume `quizforge-srv_dev-postgres-data` |
-
-### Full Docker Stack
-
-Run from the workspace root (the parent of `quizforge-srv`):
+Start the complete stack from the workspace root:
 
 ```sh
-docker compose up -d --build
+docker compose up --build
 ```
 
-This starts `quizforge-fed`, `quizforge-srv` and `quizforge-postgres` under
-`quizforge-stack`. The backend uses the `docker` profile and the datasource
-environment variables defined in the root Compose file. Frontend: port 3000;
-API: port 8081. Database and JWT settings have local defaults in the Compose
-file; override them with environment variables for deployments.
+This starts the frontend, API and PostgreSQL. Open the frontend at
+`http://localhost:3000`; the API is available at `http://localhost:8081`.
 
-Stop the stack without deleting volumes:
+Stop the stack without deleting database data:
 
 ```sh
-docker compose stop
+docker compose down
 ```
-
-### IntelliJ / Local Java
-
-The Compose file inside `quizforge-srv` starts only PostgreSQL, not another API:
-
-```sh
-docker compose -f quizforge-srv/docker-compose.yml up -d postgres
-```
-
-The existing database is already in volume `quizforge-srv_dev-postgres-data`.
-To start the currently existing container without recreating it:
-
-```sh
-docker start 1b75a11c22aa_quizforge-postgres
-```
-
-In IntelliJ, run `QuizforgeApplication` with **Active profiles: `dev`**.
-The `dev` profile is also the default when no active profile is supplied.
-Spring Boot does not start or manage Compose in this mode. Remove stale
-`SPRING_DATASOURCE_*` or `SPRING_DOCKER_COMPOSE_*` overrides from the IntelliJ
-run configuration if they point to the stack or to another database.
-
-Run the frontend locally from `quizforge-fed` with `npm run dev`. Its default
-proxy uses `localhost:8081`. Do not run the local API and the stack API at the
-same time: both use port 8081. Do not use `docker compose down -v`, which deletes
-database volumes.
-
-## Run Locally
-
-### Prerequisites
-
-- Java 21+
-- Git
-- Docker (PostgreSQL and integration tests)
-
-### Commands
-
-Linux/macOS:
-
-```bash
-./mvnw verify
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
-Windows (PowerShell):
-
-```powershell
-.\mvnw.cmd verify
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
-```
-
-These commands expose the API at `http://localhost:8081`, as expected by the frontend.
 
 ## API
 
@@ -115,9 +51,9 @@ Example body for `POST /exams`:
 
 ## Database
 
-The project uses PostgreSQL. Configuration is in `src/main/resources/application.yml`.
-Both development and Docker use `update`, not `create-drop`, and automatic SQL
-initialization is disabled. Neither mode drops the existing schema at shutdown.
+The Docker stack uses PostgreSQL. Hibernate updates the schema automatically;
+there is no need to create tables manually. Stopping the stack preserves the
+database volume.
 
 Selected alternative IDs are persisted in `user_answer_alternatives`. Existing
 attempts whose selected IDs were never stored cannot be reconstructed retroactively.
